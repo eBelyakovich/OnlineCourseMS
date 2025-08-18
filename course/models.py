@@ -1,4 +1,4 @@
-from django.contrib.auth.models import AbstractUser
+from django.contrib.auth.models import AbstractUser, Group, Permission
 from django.db import models
 
 
@@ -11,6 +11,16 @@ class User(AbstractUser):
         max_length=20,
         choices=Role.choices,
         default=Role.STUDENT
+    )
+    groups = models.ManyToManyField(
+        Group,
+        related_name="course_users",
+        blank=True
+    )
+    user_permissions = models.ManyToManyField(
+        Permission,
+        related_name="course_users",
+        blank=True
     )
 
     def __str__(self):

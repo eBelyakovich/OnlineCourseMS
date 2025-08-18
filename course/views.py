@@ -1,10 +1,12 @@
-from rest_framework import viewsets, permissions
+from django.contrib.auth.hashers import make_password
+from rest_framework import viewsets, permissions, generics
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 
-from course.models import User, Course
-from course.permissions import IsTeacher
-from course.serializers import UserSerializer, CourseSerializer
+from course.models import User, Course, Lecture, Homework, Submission, Grade
+from course.permissions import IsTeacher, IsStudent, IsOwner
+from course.serializers import UserSerializer, CourseSerializer, LectureSerializer, HomeworkSerializer, \
+    SubmissionSerializer, GradeSerializer
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -43,3 +45,60 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'status': 'teacher added'})
         except User.DoesNotExist:
             return Response({'error': 'Teacher not found'}, status=400)
+
+
+class LectureViewSet(viewsets.ModelViewSet):
+    queryset = Lecture.objects.all()
+    serializer_class = LectureSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsTeacher()]
+        return [permissions.IsAuthenticated()]
+
+
+class HomeworkViewSet(viewsets.ModelViewSet):
+    queryset = Homework.objects.all()
+    serializer_class = HomeworkSerializer
+
+    def get_permissions(self):
+        if self.action in ['create', 'update', 'partial_update', 'destroy']:
+            return [IsTeacher()]
+        return [permissions.IsAuthenticated()]
+
+
+class SubmissionViewSet(viewsets.ModelViewSet):
+    queryset = Submission.objects.all()
+    serializer_class = SubmissionSerializer
+
+    def get_permissions(self):
+        if self.action in ["create"]:
+            return [IsStudent()]
+        elif self.action in ["update", "partial_update", "destroy"]:
+            return [IsOwner()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        serializer.save(student=self.request.user)
+
+
+class GradeViewSet(viewsets.ModelViewSet):
+    queryset = Grade.objects.all()
+    serializer_class = GradeSerializer
+
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [IsTeacher()]
+        return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        serializer.save(teacher=self.request.user)
+
+
+class RegisterView(generics.CreateAPIView):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.AllowAny]
+
+    def perform_create(self, serializer):
+        serializer.save(password=make_password(serializer.validated_data['password']))

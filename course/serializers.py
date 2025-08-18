@@ -7,6 +7,7 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ['id', 'username', 'email', 'role']
+        extra_kwargs = {'password': {'write_only': True}}
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -18,7 +19,7 @@ class CourseSerializer(serializers.ModelSerializer):
         fields = ['id', 'title', 'description', 'teachers', 'students']
 
 
-class LeactureSerializer(serializers.ModelSerializer):
+class LectureSerializer(serializers.ModelSerializer):
     course = serializers.PrimaryKeyRelatedField(queryset=Course.objects.all())
 
     class Meta:
