@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from course.models import User, Course, Lecture, Homework, Submission, Grade
+from course.models import User, Course, Lecture, Homework, Submission, Grade, GradeComment
 
 
 class UserSerializer(serializers.ModelSerializer):
@@ -51,3 +51,11 @@ class GradeSerializer(serializers.ModelSerializer):
     class Meta:
         model = Grade
         fields = ["id", "submission", "teacher", "grade", "comment"]
+
+
+class GradeCommentSerializer(serializers.ModelSerializer):
+    author = UserSerializer(read_only=True)
+
+    class Meta:
+        model = GradeComment
+        fields = ['id', 'grade', 'author', 'text', 'created_at']

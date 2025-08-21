@@ -3,10 +3,10 @@ from rest_framework import viewsets, permissions, generics
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 
-from course.models import User, Course, Lecture, Homework, Submission, Grade
+from course.models import User, Course, Lecture, Homework, Submission, Grade, GradeComment
 from course.permissions import IsTeacher, IsStudent, IsOwner
 from course.serializers import UserSerializer, CourseSerializer, LectureSerializer, HomeworkSerializer, \
-    SubmissionSerializer, GradeSerializer
+    SubmissionSerializer, GradeSerializer, GradeCommentSerializer
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -32,6 +32,17 @@ class CourseViewSet(viewsets.ModelViewSet):
             student = User.objects.get(id=student_id, role='student')
             course.students.add(student)
             return Response({'status': 'student added'})
+        except User.DoesNotExist:
+            return Response({'error': 'Student not found'}, status=400)
+
+    @action(detail=True, methods=['post'], permission_classes=[IsTeacher])
+    def remove_student(self, request, pk=None):
+        course = self.get_object()
+        student_id = request.data.get('student_id')
+        try:
+            student = User.objects.get(id=student_id, role='student')
+            course.students.remove(student)
+            return Response({'status': f'Student {student.username} removed'})
         except User.DoesNotExist:
             return Response({'error': 'Student not found'}, status=400)
 
@@ -71,6 +82,21 @@ class SubmissionViewSet(viewsets.ModelViewSet):
     queryset = Submission.objects.all()
     serializer_class = SubmissionSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_superuser:
+            return Submission.objects.all()
+
+        if user.role == User.Role.STUDENT:
+            return Submission.objects.filter(student=user)
+
+        if user.role == User.Role.TEACHER:
+            return Submission.objects.filter(
+                homework__lecture__course__teachers=user
+            )
+        return Submission.objects.none()
+
     def get_permissions(self):
         if self.action in ["create"]:
             return [IsStudent()]
@@ -85,6 +111,22 @@ class SubmissionViewSet(viewsets.ModelViewSet):
 class GradeViewSet(viewsets.ModelViewSet):
     queryset = Grade.objects.all()
     serializer_class = GradeSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_superuser:
+            return Grade.objects.all()
+
+        if user.role == User.Role.STUDENT:
+            return Grade.objects.filter(submission__student=user)
+
+        if user.role == User.Role.TEACHER:
+            return Grade.objects.filter(
+                submission__homework__lecture__course__teachers=user
+            )
+
+        return Grade.objects.none()
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
@@ -102,3 +144,27 @@ class RegisterView(generics.CreateAPIView):
 
     def perform_create(self, serializer):
         serializer.save(password=make_password(serializer.validated_data['password']))
+
+
+class GradeCommentViewSet(viewsets.ModelViewSet):
+    queryset = GradeComment.objects.all()
+    serializer_class = GradeCommentSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        user = self.request.user
+
+        if user.is_superuser:
+            return GradeComment.objects.all()
+
+        if user.role == User.Role.STUDENT:
+            return GradeComment.objects.filter(grade__submission__student=user)
+
+        if user.role == User.Role.TEACHER:
+            return GradeComment.objects.filter(
+                grade__submission__homework__lecture__course__teachers=user
+            )
+        return GradeComment.objects.none()
+
+    def perform_create(self, serializer):
+        serializer.save(author=self.request.user)
