@@ -3,10 +3,13 @@ from rest_framework import viewsets, permissions, generics
 from rest_framework.decorators import action, permission_classes
 from rest_framework.response import Response
 
+from course.docs.course_docs import add_student_docs, add_teacher_docs, remove_student_docs, course_create_docs, \
+    course_update_docs, course_destroy_docs
 from course.models import User, Course, Lecture, Homework, Submission, Grade, GradeComment
 from course.permissions import IsTeacher, IsStudent, IsOwner
 from course.serializers import UserSerializer, CourseSerializer, LectureSerializer, HomeworkSerializer, \
     SubmissionSerializer, GradeSerializer, GradeCommentSerializer
+import course.docs
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -25,6 +28,7 @@ class CourseViewSet(viewsets.ModelViewSet):
         return [permissions.IsAuthenticated()]
 
     @action(detail=True, methods=['post'], permission_classes=[IsTeacher])
+    @add_student_docs
     def add_student(self, request, pk=None):
         course = self.get_object()
         student_id = request.data.get('student_id')
@@ -36,6 +40,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Student not found'}, status=400)
 
     @action(detail=True, methods=['post'], permission_classes=[IsTeacher])
+    @remove_student_docs
     def remove_student(self, request, pk=None):
         course = self.get_object()
         student_id = request.data.get('student_id')
@@ -47,6 +52,7 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'error': 'Student not found'}, status=400)
 
     @action(detail=True, methods=["post"], permission_classes=[IsTeacher])
+    @add_teacher_docs
     def add_teacher(self, request, pk=None):
         course = self.get_object()
         teacher_id = request.data.get('teacher_id')
@@ -56,6 +62,18 @@ class CourseViewSet(viewsets.ModelViewSet):
             return Response({'status': 'teacher added'})
         except User.DoesNotExist:
             return Response({'error': 'Teacher not found'}, status=400)
+
+    @course_create_docs
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @course_update_docs
+    def update(self, request, *args, **kwargs):
+        return super().update(request, *args, **kwargs)
+
+    @course_destroy_docs
+    def destroy(self, request, *args, **kwargs):
+        return super().destroy(request, *args, **kwargs)
 
 
 class LectureViewSet(viewsets.ModelViewSet):
