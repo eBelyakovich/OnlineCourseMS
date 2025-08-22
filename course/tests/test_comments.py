@@ -24,13 +24,13 @@ class GradeCommentTests(APITestCase):
         self.grade = Grade.objects.create(
             submission=self.submission,
             teacher=self.teacher,
-            grade="A",
+            grade=5,
             comment="Nice work"
         )
 
     def test_student_add_comment(self):
         self.client.login(username="student", password="123")
-        url = reverse("gradecomment-list")
+        url = reverse("comments-list")
         data = {"grade": self.grade.id, "text": "Спасибо за проверку!"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -39,7 +39,7 @@ class GradeCommentTests(APITestCase):
 
     def test_teacher_add_comment(self):
         self.client.login(username="teacher", password="123")
-        url = reverse("gradecomment-list")
+        url = reverse("comments-list")
         data = {"grade": self.grade.id, "text": "Следующий раз попробуй оптимизировать код"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -48,10 +48,10 @@ class GradeCommentTests(APITestCase):
     def test_student_cannot_comment_other_students_grade(self):
         other_student = User.objects.create_user(username="kate", password="123", role="student")
         other_submission = Submission.objects.create(homework=self.homework, student=other_student, answer_text="Other")
-        other_grade = Grade.objects.create(submission=other_submission, teacher=self.teacher, grade="B")
+        other_grade = Grade.objects.create(submission=other_submission, teacher=self.teacher, grade=4)
 
         self.client.login(username="student", password="123")
-        url = reverse("gradecomment-list")
+        url = reverse("comments-list")
         data = {"grade": other_grade.id, "text": "Я тут случайно..."}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)

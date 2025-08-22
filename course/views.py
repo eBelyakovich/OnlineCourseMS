@@ -2,6 +2,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.hashers import make_password
 from rest_framework import viewsets, permissions, generics, status
 from rest_framework.decorators import action, permission_classes
+from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -209,4 +210,14 @@ class GradeCommentViewSet(viewsets.ModelViewSet):
         return GradeComment.objects.none()
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
+        grade = serializer.validated_data['grade']
+        user = self.request.user
+
+        if user.role == User.Role.STUDENT and grade.submission.student != user:
+            raise PermissionDenied("You cannot comment on other students' grades.")
+
+        if user.role == User.Role.TEACHER and not grade.submission.homework.lecture.course.teachers.filter(
+                id=user.id).exists():
+            raise PermissionDenied("You cannot comment on grades outside your courses.")
+
+        serializer.save(author=user)
