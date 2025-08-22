@@ -1,3 +1,4 @@
+from django.contrib.auth.hashers import make_password
 from rest_framework import serializers
 
 from course.models import User, Course, Lecture, Homework, Submission, Grade, GradeComment
@@ -6,8 +7,12 @@ from course.models import User, Course, Lecture, Homework, Submission, Grade, Gr
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role']
-        extra_kwargs = {'password': {'write_only': True}}
+        fields = ("id", "username", "email", "password", "role")
+        extra_kwargs = {"password": {"write_only": True}}
+
+    def create(self, validated_data):
+        validated_data["password"] = make_password(validated_data["password"])
+        return super().create(validated_data)
 
 
 class CourseSerializer(serializers.ModelSerializer):

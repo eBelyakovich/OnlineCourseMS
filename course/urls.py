@@ -2,7 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from course.views import (UserViewSet, CourseViewSet, LectureViewSet,
                           HomeworkViewSet, SubmissionViewSet,
-                          GradeViewSet, RegisterView, GradeCommentViewSet)
+                          GradeViewSet, RegisterView, GradeCommentViewSet, LoginView, LogoutView)
 
 router = DefaultRouter()
 router.register(r'users', UserViewSet, basename='users')
@@ -16,4 +16,6 @@ router.register(r'comments', GradeCommentViewSet, basename='comments')
 urlpatterns = [
     path('', include(router.urls)),
     path('register/', RegisterView.as_view(), name='register'),
+    path('login/', LoginView.as_view(), name='login'),
+    path('logout/', LogoutView.as_view(), name='logout'),
 ]
