@@ -15,28 +15,28 @@ class PermissionTests(APITestCase):
 
     def test_student_cannot_create_course(self):
         self.client.login(username="student", password="123")
-        url = reverse("course-list")
+        url = reverse("courses-list")
         data = {"title": "HackCourse", "description": "Should not work"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_teacher_can_create_course(self):
         self.client.login(username="teacher1", password="123")
-        url = reverse("course-list")
+        url = reverse("courses-list")
         data = {"title": "Django", "description": "Web framework"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
 
     def test_teacher_cannot_edit_other_teacher_course(self):
         self.client.login(username="teacher2", password="123")
-        url = reverse("course-detail", args=[self.course.id])
+        url = reverse("courses-detail", args=[self.course.id])
         data = {"title": "Hacked course"}
         response = self.client.patch(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_student_cannot_create_lecture(self):
         self.client.login(username="student", password="123")
-        url = reverse("lecture-list")
+        url = reverse("lectures-list")
         data = {"course": self.course.id, "topic": "Hack lecture"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
@@ -47,8 +47,8 @@ class PermissionTests(APITestCase):
         sub = Submission.objects.create(homework=hw, student=self.student, answer_text="My answer")
 
         self.client.login(username="student", password="123")
-        url = reverse("grade-list")
-        data = {"submission": sub.id, "grade": "A", "comment": "Self grade"}
+        url = reverse("grades-list")
+        data = {"submission": sub.id, "grade": 5, "comment": "Self grade"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
@@ -58,8 +58,8 @@ class PermissionTests(APITestCase):
         sub = Submission.objects.create(homework=hw, student=self.student, answer_text="My answer")
 
         self.client.login(username="teacher1", password="123")
-        url = reverse("grade-list")
-        data = {"submission": sub.id, "grade": "B", "comment": "Ok"}
+        url = reverse("grades-list")
+        data = {"submission": sub.id, "grade": 4, "comment": "Ok"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Grade.objects.count(), 1)

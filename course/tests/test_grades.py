@@ -15,8 +15,8 @@ class GradeTests(APITestCase):
         self.submission = Submission.objects.create(homework=hw, student=self.student, answer_text="My solution")
 
     def test_add_grade(self):
-        url = reverse('grade-list')
-        data = {"submission": self.submission.id, "grade": "A", "comment": "Well done"}
+        url = reverse('grades-list')
+        data = {"submission": self.submission.id, "grade": 5, "comment": "Well done"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(Grade.objects.count(), 1)

@@ -1,11 +1,10 @@
 from django.contrib.auth import authenticate, login, logout
-from django.contrib.auth.hashers import make_password
 from rest_framework import viewsets, permissions, generics, status
 from rest_framework.decorators import action, permission_classes
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 
 from course.docs.course_docs import add_student_docs, add_teacher_docs, remove_student_docs, course_create_docs, \
     course_update_docs, course_destroy_docs
@@ -94,11 +93,20 @@ class CourseViewSet(viewsets.ModelViewSet):
 
     @course_update_docs
     def update(self, request, *args, **kwargs):
+        course = self.get_object()
+        user = request.user
+        if not (user.is_superuser or course.teachers.filter(id=user.id).exists()):
+            raise PermissionDenied("You cannot edit another teacher's course.")
         return super().update(request, *args, **kwargs)
 
     @course_destroy_docs
     def destroy(self, request, *args, **kwargs):
+        course = self.get_object()
+        user = request.user
+        if not (user.is_superuser or course.teachers.filter(id=user.id).exists()):
+            raise PermissionDenied("You cannot delete another teacher's course.")
         return super().destroy(request, *args, **kwargs)
+
 
 
 class LectureViewSet(viewsets.ModelViewSet):

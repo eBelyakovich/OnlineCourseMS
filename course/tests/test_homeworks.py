@@ -11,7 +11,7 @@ class LectureTests(APITestCase):
         self.course.teachers.add(self.teacher)
 
     def test_add_lecture(self):
-        url = reverse('lecture-list')
+        url = reverse('lectures-list')
         data = {"course": self.course.id, "topic": "Intro"}
         response = self.client.post(url, data)
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)

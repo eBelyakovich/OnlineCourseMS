@@ -9,7 +9,7 @@ class CourseTests(APITestCase):
         self.client.login(username="teacher", password="123")
 
     def test_create_course(self):
-        url = reverse('course-list')
+        url = reverse('courses-list')
         data = {"title": "Python Basics", "description": "Intro to Python"}
         response = self.client.post(url, data, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -18,7 +18,7 @@ class CourseTests(APITestCase):
 
     def test_get_courses(self):
         Course.objects.create(title="Django", description="Web framework")
-        url = reverse('course-list')
+        url = reverse('courses-list')
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
