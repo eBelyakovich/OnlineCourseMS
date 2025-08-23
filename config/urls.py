@@ -1,5 +1,5 @@
 """
-URL configuration for OnlineCourseMS project.
+URL configuration for config project.
 
 The `urlpatterns` list routes URLs to views. For more information please see:
     https://docs.djangoproject.com/en/5.2/topics/http/urls/
@@ -19,7 +19,12 @@ from django.urls import path, include
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('api/', include('course.urls')),
-    path('docs/', include('course.docs_urls')),
+
+    path('api/users/', include('apps.users.urls')),
+    path('api/courses/', include('apps.courses.urls')),
+    path('api/submissions/', include('apps.submissions.urls')),
+
+    path('docs/', include('config.docs_urls')),
+
     path('api/auth/', include('rest_framework.urls')),
 ]

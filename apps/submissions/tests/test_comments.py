@@ -1,7 +1,10 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from course.models import User, Course, Lecture, Homework, Submission, Grade, GradeComment
+
+from apps.courses.models import Course, Lecture, Homework
+from apps.submissions.models import Submission, Grade, GradeComment
+from apps.users.models import User
 
 
 class GradeCommentTests(APITestCase):
