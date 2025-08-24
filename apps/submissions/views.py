@@ -2,6 +2,9 @@ from rest_framework import viewsets, permissions
 from rest_framework.exceptions import PermissionDenied
 
 from apps.courses.permissions import IsOwner, IsStudent, IsTeacher
+from apps.submissions.docs.grades_docs import grade_create_docs, grade_update_docs, grade_destroy_docs, \
+    comment_create_docs
+from apps.submissions.docs.submission_docs import submission_create_docs, submission_update_docs
 from apps.submissions.models import Submission, Grade, GradeComment
 from apps.submissions.serializers import GradeCommentSerializer, SubmissionSerializer, GradeSerializer
 from apps.users.models import User
@@ -33,6 +36,18 @@ class SubmissionViewSet(viewsets.ModelViewSet):
             return [IsOwner()]
         return [permissions.IsAuthenticated()]
 
+    @submission_create_docs
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @submission_update_docs
+    def update(self, request, *args, **kwargs):
+        submission = self.get_object()
+        user = request.user
+        if not (user.is_superuser or submission.student == user):
+            raise PermissionDenied("You cannot edit another student's submission.")
+        return super().update(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(student=self.request.user)
 
@@ -62,10 +77,28 @@ class GradeViewSet(viewsets.ModelViewSet):
             return [IsTeacher()]
         return [permissions.IsAuthenticated()]
 
+    @grade_create_docs
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    @grade_update_docs
+    def update(self, request, *args, **kwargs):
+        grade = self.get_object()
+        user = request.user
+        if not (user.is_superuser or grade.teacher == user):
+            raise PermissionDenied("You cannot edit another teacher's grade.")
+        return super().update(request, *args, **kwargs)
+
+    @grade_destroy_docs
+    def destroy(self, request, *args, **kwargs):
+        grade = self.get_object()
+        user = request.user
+        if not (user.is_superuser or grade.teacher == user):
+            raise PermissionDenied("You cannot delete another teacher's grade.")
+        return super().destroy(request, *args, **kwargs)
+
     def perform_create(self, serializer):
         serializer.save(teacher=self.request.user)
-
-
 
 
 class GradeCommentViewSet(viewsets.ModelViewSet):
@@ -100,3 +133,7 @@ class GradeCommentViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("You cannot comment on grades outside your courses.")
 
         serializer.save(author=user)
+
+    @comment_create_docs
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)

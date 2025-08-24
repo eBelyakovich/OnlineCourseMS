@@ -13,3 +13,12 @@ class UserSerializer(serializers.ModelSerializer):
     def create(self, validated_data):
         validated_data["password"] = make_password(validated_data["password"])
         return super().create(validated_data)
+
+
+class LoginSerializer(serializers.Serializer):
+    username = serializers.CharField()
+    password = serializers.CharField(write_only=True)
+
+
+class LogoutSerializer(serializers.Serializer):
+    detail = serializers.CharField(read_only=True, default="Successfully logged out")
