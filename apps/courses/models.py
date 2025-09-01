@@ -48,18 +48,44 @@ class Course(models.Model):
         return self.title
 
 
+class LectureQuerySet(models.QuerySet):
+    def for_user(self, user):
+        if user.is_superuser:
+            return self.all()
+        if user.role == user.Role.STUDENT:
+            return self.filter(course__students=user)
+        if user.role == user.Role.TEACHER:
+            return self.filter(course__teachers=user)
+        return self.none()
+
+
 class Lecture(models.Model):
     course = models.ForeignKey(Course, on_delete=models.CASCADE, related_name='lectures')
     topic = models.CharField(max_length=255)
     presentation = models.FileField(upload_to='presentations/', blank=True, null=True)
 
+    object = LectureQuerySet.as_manager()
+
     def __str__(self):
         return f'{self.course.title}: {self.topic}'
+
+
+class HomeworkQuerySet(models.QuerySet):
+    def for_user(self, user):
+        if user.is_superuser:
+            return self.all()
+        if user.role == user.Role.STUDENT:
+            return self.filter(lecture__course__students=user)
+        if user.role == user.Role.TEACHER:
+            return self.filter(lecture__course__teachers=user)
+        return self.none()
 
 
 class Homework(models.Model):
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name='homeworks')
     text = models.TextField()
+
+    objects = HomeworkQuerySet.as_manager()
 
     def __str__(self):
         return f'Homework for {self.lecture.topic}'
