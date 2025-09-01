@@ -1,11 +1,13 @@
 from django.contrib.auth import authenticate, login, logout
 from rest_framework import status, viewsets, permissions, generics
+from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from apps.users.docs import register_user_docs
 from apps.users.models import User
 from apps.users.serializers import UserSerializer, LoginSerializer, LogoutSerializer
+from apps.users.services.user_service import UserService
 
 
 class LoginView(APIView):
@@ -41,6 +43,11 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        serializer = self.get_serializer(request.user)
+        return Response(serializer.data)
+
 
 @register_user_docs
 class RegisterView(generics.CreateAPIView):
@@ -49,4 +56,11 @@ class RegisterView(generics.CreateAPIView):
     permission_classes = [AllowAny]
 
     def perform_create(self, serializer):
-        serializer.save()
+        validated = serializer.validated_data
+        user = UserService.create_user(
+            username=validated["username"],
+            email=validated.get("email"),
+            password=validated["password"],
+            role=validated["role"]
+        )
+        serializer.instance = user

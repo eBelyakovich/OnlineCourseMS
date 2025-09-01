@@ -1,26 +1,62 @@
 from django.db import models
+from django.db.models import QuerySet
 
 from apps.users.models import User
+
+
+class CourseQuerySet(QuerySet):
+    def for_user(self, user):
+        if user.is_superuser:
+            return self.all()
+        if user.role == user.Role.STUDENT:
+            return self.filter(students=user)
+        if user.role == user.Role.TEACHER:
+            return self.filter(teachers=user)
+        return self.none()
+
+    def with_teacher(self):
+        return self.prefetch_related('teachers')
+
+    def available(self):
+        return self.filter(is_active=True)
+
+
+class CourseManager(models.Manager):
+    def get_queryset(self):
+        return CourseQuerySet(self.model, using=self._db)
+
+    def for_user(self, user):
+        return self.get_queryset().for_user(user)
+
+    def with_teacher(self):
+        return self.get_queryset().with_teacher()
+
+    def available(self):
+        return self.get_queryset().available()
 
 
 class Course(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True)
 
-    teachers = models.ManyToManyField(
-        User,
-        related_name='teaching_courses',
-        limit_choices_to={'role': User.Role.TEACHER}
-    )
-    students = models.ManyToManyField(
-        User,
-        related_name='enrolled_courses',
-        blank=True,
-        limit_choices_to={'role': User.Role.STUDENT}
-    )
+    teachers = models.ManyToManyField('users.User', related_name='teaching_courses')
+    students = models.ManyToManyField('users.User', related_name='enrolled_courses')
+
+    objects = CourseManager()
 
     def __str__(self):
         return self.title
+
+
+class LectureQuerySet(models.QuerySet):
+    def for_user(self, user):
+        if user.is_superuser:
+            return self.all()
+        if user.role == user.Role.STUDENT:
+            return self.filter(course__students=user)
+        if user.role == user.Role.TEACHER:
+            return self.filter(course__teachers=user)
+        return self.none()
 
 
 class Lecture(models.Model):
@@ -28,13 +64,28 @@ class Lecture(models.Model):
     topic = models.CharField(max_length=255)
     presentation = models.FileField(upload_to='presentations/', blank=True, null=True)
 
+    objects = LectureQuerySet.as_manager()
+
     def __str__(self):
         return f'{self.course.title}: {self.topic}'
+
+
+class HomeworkQuerySet(models.QuerySet):
+    def for_user(self, user):
+        if user.is_superuser:
+            return self.all()
+        if user.role == user.Role.STUDENT:
+            return self.filter(lecture__course__students=user)
+        if user.role == user.Role.TEACHER:
+            return self.filter(lecture__course__teachers=user)
+        return self.none()
 
 
 class Homework(models.Model):
     lecture = models.ForeignKey(Lecture, on_delete=models.CASCADE, related_name='homeworks')
     text = models.TextField()
+
+    objects = HomeworkQuerySet.as_manager()
 
     def __str__(self):
         return f'Homework for {self.lecture.topic}'

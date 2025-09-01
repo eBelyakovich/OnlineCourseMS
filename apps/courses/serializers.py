@@ -21,12 +21,6 @@ class LectureSerializer(serializers.ModelSerializer):
         model = Lecture
         fields = ['id', 'course', 'topic', 'presentation']
 
-    def validate_course(self, value):
-        request = self.context.get('request')
-        if request and request.user not in value.teachers.all():
-            raise PermissionDenied("You are not a teacher of this course")
-        return value
-
 
 class HomeworkSerializer(serializers.ModelSerializer):
     lecture = serializers.PrimaryKeyRelatedField(queryset=Lecture.objects.all())
@@ -34,9 +28,3 @@ class HomeworkSerializer(serializers.ModelSerializer):
     class Meta:
         model = Homework
         fields = ['id', 'lecture', 'text']
-
-    def validate_lecture(self, value):
-        request = self.context.get('request')
-        if request and request.user not in value.course.teachers.all():
-            raise PermissionDenied("You are not a teacher of this course")
-        return value
