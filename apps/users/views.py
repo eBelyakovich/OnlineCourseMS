@@ -4,7 +4,9 @@ from rest_framework.decorators import action
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from apps.users.docs import register_user_docs
+
+from apps.users.docs.docs import register_user_docs
+from apps.users.docs.user_docs import me_docs
 from apps.users.models import User
 from apps.users.serializers import UserSerializer, LoginSerializer, LogoutSerializer
 from apps.users.services.user_service import UserService
@@ -43,6 +45,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
 
+    @me_docs
     @action(detail=False, methods=["get"])
     def me(self, request):
         serializer = self.get_serializer(request.user)
