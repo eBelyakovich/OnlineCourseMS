@@ -1,6 +1,5 @@
 from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
 from rest_framework.response import Response
 
 from apps.courses.docs.course_docs import add_student_docs, remove_student_docs, add_teacher_docs, course_create_docs, \
@@ -10,7 +9,9 @@ from apps.courses.docs.lectures_docs import lecture_create_docs, lecture_update_
 from apps.courses.models import Course, Lecture, Homework
 from apps.courses.permissions import IsTeacher
 from apps.courses.serializers import CourseSerializer, LectureSerializer, HomeworkSerializer
-from apps.users.models import User
+from apps.courses.services.course_service import CourseService
+from apps.courses.services.homework_service import HomeworkService
+from apps.courses.services.lecture_service import LectureService
 
 
 class CourseViewSet(viewsets.ModelViewSet):
@@ -30,37 +31,22 @@ class CourseViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['post'], permission_classes=[IsTeacher])
     def add_student(self, request, pk=None):
         course = self.get_object()
-        student_id = request.data.get('student_id')
-        try:
-            student = User.objects.get(id=student_id, role='student')
-            course.students.add(student)
-            return Response({'status': 'student added'})
-        except User.DoesNotExist:
-            return Response({'error': 'Student not found'}, status=400)
+        data, status_code = CourseService.add_student(course, request.data.get('student_id'))
+        return Response(data, status=status_code)
 
     @remove_student_docs
     @action(detail=True, methods=['post'], permission_classes=[IsTeacher])
     def remove_student(self, request, pk=None):
         course = self.get_object()
-        student_id = request.data.get('student_id')
-        try:
-            student = User.objects.get(id=student_id, role='student')
-            course.students.remove(student)
-            return Response({'status': f'Student {student.username} removed'})
-        except User.DoesNotExist:
-            return Response({'error': 'Student not found'}, status=400)
+        data, status_code = CourseService.remove_student(course, request.data.get('student_id'))
+        return Response(data, status=status_code)
 
     @add_teacher_docs
     @action(detail=True, methods=["post"], permission_classes=[IsTeacher])
     def add_teacher(self, request, pk=None):
         course = self.get_object()
-        teacher_id = request.data.get('teacher_id')
-        try:
-            teacher = User.objects.get(id=teacher_id, role='teacher')
-            course.teachers.add(teacher)
-            return Response({'status': 'teacher added'})
-        except User.DoesNotExist:
-            return Response({'error': 'Teacher not found'}, status=400)
+        data, status_code = CourseService.add_teacher(course, request.data.get('teacher_id'))
+        return Response(data,status=status_code)
 
     @course_create_docs
     def create(self, request, *args, **kwargs):
@@ -69,17 +55,13 @@ class CourseViewSet(viewsets.ModelViewSet):
     @course_update_docs
     def update(self, request, *args, **kwargs):
         course = self.get_object()
-        user = request.user
-        if not (user.is_superuser or course.teachers.filter(id=user.id).exists()):
-            raise PermissionDenied("You cannot edit another teacher's course.")
+        CourseService.check_edit_permissions(course, request.user)
         return super().update(request, *args, **kwargs)
 
     @course_destroy_docs
     def destroy(self, request, *args, **kwargs):
         course = self.get_object()
-        user = request.user
-        if not (user.is_superuser or course.teachers.filter(id=user.id).exists()):
-            raise PermissionDenied("You cannot delete another teacher's course.")
+        CourseService.check_edit_permissions(course, request.user)
         return super().destroy(request, *args, **kwargs)
 
 
@@ -99,17 +81,13 @@ class LectureViewSet(viewsets.ModelViewSet):
     @lecture_update_docs
     def update(self, request, *args, **kwargs):
         lecture = self.get_object()
-        user = request.user
-        if not (user.is_superuser or lecture.course.teachers.filter(id=user.id).exists()):
-            raise PermissionDenied("You cannot edit another teacher's lecture.")
+        LectureService.check_edit_permissions(lecture, request.user)
         return super().update(request, *args, **kwargs)
 
     @lecture_destroy_docs
     def destroy(self, request, *args, **kwargs):
         lecture = self.get_object()
-        user = request.user
-        if not (user.is_superuser or lecture.course.teachers.filter(id=user.id).exists()):
-            raise PermissionDenied("You cannot delete another teacher's lecture.")
+        LectureService.check_edit_permissions(lecture, request.user)
         return super().destroy(request, *args, **kwargs)
 
 
@@ -129,15 +107,11 @@ class HomeworkViewSet(viewsets.ModelViewSet):
     @homework_update_docs
     def update(self, request, *args, **kwargs):
         homework = self.get_object()
-        user = request.user
-        if not (user.is_superuser or homework.lecture.course.teachers.filter(id=user.id).exists()):
-            raise PermissionDenied("You cannot edit another teacher's homework.")
+        HomeworkService.check_edit_permissions(homework, request.user)
         return super().update(request, *args, **kwargs)
 
     @homework_destroy_docs
     def destroy(self, request, *args, **kwargs):
         homework = self.get_object()
-        user = request.user
-        if not (user.is_superuser or homework.lecture.course.teachers.filter(id=user.id).exists()):
-            raise PermissionDenied("You cannot delete another teacher's homework.")
+        HomeworkService.check_edit_permissions(homework, request.user)
         return super().destroy(request, *args, **kwargs)
