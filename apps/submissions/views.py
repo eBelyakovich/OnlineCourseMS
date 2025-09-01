@@ -37,6 +37,7 @@ class SubmissionViewSet(viewsets.ModelViewSet):
         return super().update(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        SubmissionService.check_create_permissions(serializer.validated_data["homework"], self.request.user)
         serializer.save(student=self.request.user)
 
 
@@ -82,7 +83,7 @@ class GradeCommentViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         grade = serializer.validated_data['grade']
-        GradeCommentService.check_edit_permissions(grade, self.request.user)
+        GradeCommentService.check_create_permissions(grade, self.request.user)
         serializer.save(author=self.request.user)
 
     @comment_create_docs

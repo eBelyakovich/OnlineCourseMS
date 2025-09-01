@@ -12,3 +12,12 @@ class GradeCommentService:
     def check_edit_permissions(grade: Grade, user: User):
         if not (user.is_superuser or grade.teacher == user):
             raise PermissionDenied("You cannot modify another teacher's grade.")
+
+    @staticmethod
+    def check_create_permissions(grade, user):
+        if user.role == user.Role.STUDENT and grade.submission.student != user:
+            raise PermissionDenied("You cannot comment on other students' grades.")
+
+        if user.role == user.Role.TEACHER and not grade.submission.homework.lecture.course.teachers.filter(
+                id=user.id).exists():
+            raise PermissionDenied("You cannot comment on grades outside your courses.")
