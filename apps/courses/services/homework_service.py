@@ -8,3 +8,8 @@ class HomeworkService:
     def check_edit_permissions(homework: Homework, user: User):
         if not (user.is_superuser or homework.lecture.course.teachers.filter(id=user.id).exists()):
             raise PermissionDenied("You cannot modify another teacher's homework.")
+
+    @staticmethod
+    def check_create_permissions(lecture, user):
+        if not (user.is_superuser or user in lecture.course.teachers.all()):
+            raise PermissionDenied("You are not a teacher of this course")

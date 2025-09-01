@@ -12,3 +12,8 @@ class GradeService:
     def check_edit_permissions(grade: Grade, user: User):
         if not (user.is_superuser or grade.teacher == user):
             raise PermissionDenied("You cannot modify another teacher's grade.")
+
+    @staticmethod
+    def check_create_permissions(submission, user):
+        if submission.student == user:
+            raise PermissionDenied("You cannot grade your own submission.")

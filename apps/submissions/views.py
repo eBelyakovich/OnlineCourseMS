@@ -68,6 +68,8 @@ class GradeViewSet(viewsets.ModelViewSet):
         return super().destroy(request, *args, **kwargs)
 
     def perform_create(self, serializer):
+        submission = serializer.validated_data["submission"]
+        GradeService.check_create_permissions(submission, self.request.user)
         serializer.save(teacher=self.request.user)
 
 

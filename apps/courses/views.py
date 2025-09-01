@@ -74,6 +74,11 @@ class LectureViewSet(viewsets.ModelViewSet):
             return [IsTeacher()]
         return [permissions.IsAuthenticated()]
 
+    def perform_create(self, serializer):
+        course = serializer.validated_data['course']
+        LectureService.check_create_permissions(course, self.request.user)
+        serializer.save()
+
     @lecture_create_docs
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)
@@ -99,6 +104,11 @@ class HomeworkViewSet(viewsets.ModelViewSet):
         if self.action in ['create', 'update', 'partial_update', 'destroy']:
             return [IsTeacher()]
         return [permissions.IsAuthenticated()]
+
+    def perform_create(self, serializer):
+        lecture = serializer.validated_data['lecture']
+        HomeworkService.check_create_permissions(lecture, self.request.user)
+        serializer.save()
 
     @homework_create_docs
     def create(self, request, *args, **kwargs):

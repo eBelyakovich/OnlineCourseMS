@@ -27,18 +27,6 @@ class GradeSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('Grade must be between 1 and 5')
         return value
 
-    def validate(self, attrs):
-        submission = attrs.get('submission')
-        request = self.context.get('request')
-
-        if request and submission:
-            if submission.student == request.user:
-                raise serializers.ValidationError(
-                    'You cannot grade your own submission'
-                )
-
-        return attrs
-
 
 class GradeCommentSerializer(serializers.ModelSerializer):
     author = UserSerializer(read_only=True)

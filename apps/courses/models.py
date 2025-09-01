@@ -64,7 +64,7 @@ class Lecture(models.Model):
     topic = models.CharField(max_length=255)
     presentation = models.FileField(upload_to='presentations/', blank=True, null=True)
 
-    object = LectureQuerySet.as_manager()
+    objects = LectureQuerySet.as_manager()
 
     def __str__(self):
         return f'{self.course.title}: {self.topic}'
